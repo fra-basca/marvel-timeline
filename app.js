@@ -52,16 +52,35 @@
     openSeries: null,         // id della serie aperta nella finestra episodi
   };
 
-  // ---------- Salvataggio (nel browser) ----------
+  // ---------- Salvataggio ----------
+  // Senza accesso i progressi stanno nel browser (localStorage).
+  // Con l'accesso Google, firebase-sync.js imposta "cloudSaver" e i progressi vanno online.
+  let cloudSaver = null;
+
+  // Formato salvato: { seen: [id...], skipped: [id...], episodes: { idSerie: [numeri...] } }
+  function serialize(progress) {
+    const episodes = {};
+    Object.entries(progress.episodes).forEach(([id, set]) => {
+      if (set.size) episodes[id] = [...set].sort((a, b) => a - b);
+    });
+    return { seen: [...progress.seen].sort(), skipped: [...progress.skipped].sort(), episodes };
+  }
+
+  function deserialize(raw) {
+    const episodes = {};
+    Object.entries((raw && raw.episodes) || {}).forEach(([id, list]) => { episodes[id] = new Set(list); });
+    return {
+      seen: new Set((raw && raw.seen) || []),
+      skipped: new Set((raw && raw.skipped) || []),
+      episodes,
+    };
+  }
+
   function loadProgress() {
-    const empty = { seen: new Set(), episodes: {} };
+    const empty = { seen: new Set(), skipped: new Set(), episodes: {} };
     try {
       const raw = JSON.parse(localStorage.getItem(STORAGE_KEY));
-      if (raw) {
-        const episodes = {};
-        Object.entries(raw.episodes || {}).forEach(([id, list]) => { episodes[id] = new Set(list); });
-        return { seen: new Set(raw.seen || []), episodes };
-      }
+      if (raw) return deserialize(raw);
       // Migrazione dalla versione precedente: una serie "vista" = tutti gli episodi visti
       const old = JSON.parse(localStorage.getItem(OLD_STORAGE_KEY));
       if (Array.isArray(old)) {
@@ -77,14 +96,35 @@
   }
 
   function saveProgress() {
-    const episodes = {};
-    Object.entries(state.progress.episodes).forEach(([id, set]) => {
-      if (set.size) episodes[id] = [...set].sort((a, b) => a - b);
-    });
+    const data = serialize(state.progress);
+    if (cloudSaver) {
+      cloudSaver(data);
+      return;
+    }
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ seen: [...state.progress.seen], episodes }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     } catch (e) { /* storage non disponibile: i dati valgono solo per questa visita */ }
   }
+
+  // Mostra dei progressi arrivati da fuori (es. dal database online) e aggiorna la pagina
+  function showProgress(progress) {
+    state.progress = progress;
+    render();
+    if (dialog.open && state.openSeries) updateDialog();
+  }
+
+  // Collegamento con firebase-sync.js
+  window.MarvelTimeline = {
+    // progressi salvati in questo browser
+    localProgress: () => serialize(loadProgress()),
+    clearLocal: () => { try { localStorage.removeItem(STORAGE_KEY); } catch (e) { /* niente */ } },
+    // da qui in poi salva online con questa funzione
+    useCloud: (saver) => { cloudSaver = saver; },
+    // torna al salvataggio nel browser
+    useLocal: () => { cloudSaver = null; showProgress(loadProgress()); },
+    // mostra i progressi arrivati dal database
+    showRemote: (raw) => showProgress(deserialize(raw)),
+  };
 
   // ---------- Utilità ----------
   function range(n) {
@@ -98,6 +138,17 @@
   function isSeen(item) {
     if (item.type === "serie") return item.episodes > 0 && episodesSeen(item.id).size >= item.episodes;
     return state.progress.seen.has(item.id);
+  }
+
+  // Titolo saltato (non disponibile sulle vostre piattaforme): non conta nei totali
+  function isSkipped(item) {
+    return state.progress.skipped.has(item.id);
+  }
+
+  function setSkipped(id, skipped) {
+    if (skipped) state.progress.skipped.add(id); else state.progress.skipped.delete(id);
+    saveProgress();
+    render();
   }
 
   function formatDuration(item) {
@@ -171,6 +222,9 @@
 
   // ---------- Card ----------
   function buttonHtml(item, seen) {
+    if (isSkipped(item)) {
+      return `<button type="button" class="seen-toggle restore" data-action="restore" data-id="${item.id}">↺ Ripristina</button>`;
+    }
     if (item.type === "serie") {
       const label = seen ? "✓ Vista" : "Segna episodi";
       return `<button type="button" class="seen-toggle" data-action="episodes" data-id="${item.id}">${label}</button>`;
@@ -198,12 +252,18 @@
         </div>`;
     }
 
+    const skipped = isSkipped(item);
+    const skipControl = skipped
+      ? `<span class="skip-label">Saltato</span>`
+      : seen ? "" : `<button type="button" class="skip-btn" data-id="${item.id}" title="Salta (non disponibile)" aria-label="Salta ${title}">⊘</button>`;
+
     return `
-      <article class="card${seen ? " seen" : ""}">
+      <article class="card${seen && !skipped ? " seen" : ""}${skipped ? " skipped" : ""}">
         <div class="poster${isLogo ? " logo" : ""}">
           ${posterHtml}
           ${phaseTags[item.phase] ? `<span class="origin-tag">${phaseTags[item.phase]}</span>` : ""}
           <span class="seen-mark" aria-hidden="true">✓</span>
+          ${skipControl}
         </div>
         <div class="info">
           <h3 title="${title}">${title}</h3>
@@ -220,18 +280,22 @@
   // ---------- Render ----------
 
   function renderProgress() {
-    const total = TITLES.length;
-    const seen = TITLES.filter(isSeen).length;
-    const pct = Math.round((seen / total) * 100);
+    // I titoli saltati non contano: si arriva al 100% di ciò che si può vedere
+    const available = TITLES.filter((t) => !isSkipped(t));
+    const skippedCount = TITLES.length - available.length;
+    const total = available.length;
+    const seen = available.filter(isSeen).length;
+    const pct = total ? Math.round((seen / total) * 100) : 100;
     document.getElementById("progress-count").textContent = seen;
-    document.getElementById("progress-total").textContent = `di ${total} titoli visti`;
+    document.getElementById("progress-total").textContent =
+      `di ${total} titoli visti` + (skippedCount ? ` · ${skippedCount} saltati` : "");
     document.getElementById("progress-pct").textContent = `${pct}%`;
-    document.getElementById("progress-fill").style.width = `${(seen / total) * 100}%`;
+    document.getElementById("progress-fill").style.width = `${total ? (seen / total) * 100 : 100}%`;
     document.getElementById("progress-bar").setAttribute("aria-valuenow", pct);
 
     // Tempo di visione
-    const totalTime = TITLES.reduce((sum, t) => sum + totalMinutes(t), 0);
-    const watchedTime = TITLES.reduce((sum, t) => sum + watchedMinutes(t), 0);
+    const totalTime = available.reduce((sum, t) => sum + totalMinutes(t), 0);
+    const watchedTime = available.reduce((sum, t) => sum + watchedMinutes(t), 0);
     document.getElementById("time-watched").textContent = formatTime(watchedTime);
     document.getElementById("time-left").textContent = formatTime(totalTime - watchedTime);
     document.getElementById("time-total").textContent = formatTime(totalTime);
@@ -241,7 +305,7 @@
   // Primo titolo già uscito e non ancora visto, nell'ordine della pagina.
   // Per una serie iniziata indica il primo episodio non visto.
   function findNext() {
-    const item = PAGE_ORDER.find((t) => t.date <= TODAY && !isSeen(t));
+    const item = PAGE_ORDER.find((t) => t.date <= TODAY && !isSeen(t) && !isSkipped(t));
     if (!item) return null;
     if (item.type !== "serie") return { item };
     const seenSet = episodesSeen(item.id);
@@ -254,7 +318,8 @@
     const next = findNext();
 
     if (!next) {
-      const upcoming = PAGE_ORDER.filter((t) => t.date > TODAY).sort((a, b) => a.date.localeCompare(b.date))[0];
+      const upcoming = PAGE_ORDER.filter((t) => t.date > TODAY && !isSkipped(t))
+        .sort((a, b) => a.date.localeCompare(b.date))[0];
       box.innerHTML = `
         <div class="next-done">
           <strong>Hai visto tutto quello che è uscito finora!</strong>
@@ -281,6 +346,8 @@
       detail = `${yearOf(item)} • ${formatDuration(item)}`;
       actions = `<button type="button" class="next-primary" data-action="mark-title" data-id="${item.id}">✓ Segna come visto</button>`;
     }
+    const skipWhat = item.type === "serie" ? "stagione" : "titolo";
+    actions += `<button type="button" class="next-skip" data-action="skip" data-id="${item.id}" title="Non disponibile sulle vostre piattaforme: salta questa ${skipWhat}">⊘ Salta</button>`;
 
     box.innerHTML = `
       <div class="next-poster">${poster ? `<img src="${poster}" alt="">` : ""}</div>
@@ -301,6 +368,7 @@
     if (!btn) return;
     const id = btn.dataset.id;
     if (btn.dataset.action === "episodes") openEpisodes(id);
+    if (btn.dataset.action === "skip") setSkipped(id, true);
     if (btn.dataset.action === "mark-title") {
       state.progress.seen.add(id);
       saveProgress();
@@ -320,13 +388,14 @@
     const sections = PHASES.map((phase) => {
       const items = list.filter((t) => sectionOf(t) === phase.id);
       if (!items.length) return "";
-      const seen = items.filter(isSeen).length;
+      const counted = items.filter((t) => !isSkipped(t)); // i saltati non contano
+      const seen = counted.filter(isSeen).length;
       return `
         <section class="phase">
           <header class="phase-header">
             <h2>${phase.name}</h2>
             <span class="phase-years">${sectionYears[phase.id]}</span>
-            <span class="phase-count">${seen}/${items.length} visti</span>
+            <span class="phase-count">${seen}/${counted.length} visti</span>
           </header>
           <div class="grid">${items.map(cardHtml).join("")}</div>
         </section>`;
@@ -424,9 +493,18 @@
 
   // ---------- Eventi card ----------
   timeline.addEventListener("click", (e) => {
+    const skipBtn = e.target.closest(".skip-btn");
+    if (skipBtn) {
+      setSkipped(skipBtn.dataset.id, true);
+      return;
+    }
     const btn = e.target.closest(".seen-toggle");
     if (!btn) return;
     const id = btn.dataset.id;
+    if (btn.dataset.action === "restore") {
+      setSkipped(id, false);
+      return;
+    }
     if (btn.dataset.action === "episodes") {
       openEpisodes(id);
       return;

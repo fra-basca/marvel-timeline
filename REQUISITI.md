@@ -87,7 +87,28 @@ Legenda stato: ✅ fatto · 🔜 da fare
 | 5.8a | **Tempo di visione** sotto la barra generale: tempo guardato, tempo che manca e tempo totale (oggi circa 667 ore: 125 h di film e speciali, 542 h di serie). Per le serie conta la durata reale di ogni episodio visto | ✅ |
 | 5.8b | Riquadro **"Prossimo da guardare"** sotto l'avanzamento: il primo titolo già uscito e non ancora visto, nell'ordine della pagina (Fasi 1–6, poi X-Men Universe, poi Spider-Man Universe). Per le serie indica il prossimo episodio con titolo e durata. Pulsanti: "Segna come visto" (film) oppure "Segna episodio N visto" e "Tutti gli episodi" (serie). Se hai visto tutto, mostra la prossima uscita | ✅ |
 | 5.8c | Nella finestra episodi, passando il mouse su un episodio compaiono titolo e durata | ✅ |
-| 5.9 | Salvataggio **online** con Firebase, per avere gli stessi dati su tutti i dispositivi e tra più persone (vedi sezione 7) | 🔜 |
+| 5.9 | Salvataggio **online** con Firebase (vedi sezione 5b) | 🧪 in prova |
+| 5.10 | Pulsante **"Salta"** per i titoli non disponibili sulle vostre piattaforme: icona ⊘ in basso a destra sulla locandina e pulsante "⊘ Salta" nel riquadro "Prossimo da guardare". Per le serie si salta l'intera stagione | ✅ |
+| 5.10a | Le schede saltate restano al loro posto, in grigio, con la scritta "SALTATO" e il pulsante "↺ Ripristina" | ✅ |
+| 5.10b | I titoli saltati non contano nell'avanzamento generale ("12 di 115 titoli visti · 6 saltati"), nel conteggio delle fasi, nel tempo di visione e in "Prossimo da guardare" | ✅ |
+| 5.10c | I titoli saltati vengono salvati come le spunte (nel browser o online) | ✅ |
+
+## 5b. Salvataggio online (Firebase)
+
+| # | Requisito | Stato |
+|---|---|---|
+| 5b.1 | Progetto Firebase `marvel-timeline-b646e` (piano gratuito Spark); configurazione in `firebase-config.js` (valori non segreti) | ✅ |
+| 5b.2 | Pulsante "Accedi con Google" in alto a destra; dopo l'accesso: foto, "Ciao <nome>", stato ("Salvato online ✓") e "Esci" | ✅ |
+| 5b.3 | **Ognuno la sua lista**: ogni account Google ha il proprio documento `users/<id utente>` in Firestore | ✅ |
+| 5b.4 | Chi non fa l'accesso usa il sito come prima (spunte salvate solo nel browser) e non vede le liste degli altri | ✅ |
+| 5b.5 | Sincronizzazione in tempo reale tra dispositivi | ✅ |
+| 5b.6 | Al primo accesso da un browser, le spunte salvate lì vengono unite a quelle online e poi tolte dal browser | ✅ |
+| 5b.7 | Regole di sicurezza Firestore: ognuno legge e scrive solo il proprio documento (`allow read, write: if request.auth != null && request.auth.uid == userId;` su `/users/{userId}`) | ✅ |
+| 5b.8 | Domini autorizzati in Firebase Authentication: `localhost` (prove) e `fra-basca.github.io` (sito pubblicato) | ✅ |
+| 5b.9 | Prova completa in locale (accesso, salvataggio, sincronizzazione) prima della pubblicazione — in corso: errore "Database non raggiungibile" da risolvere (regole Firestore) | 🔜 |
+
+Per provare in locale serve un piccolo server (l'accesso Google non funziona aprendo il file con doppio clic): `python3 -m http.server 8000` nella cartella del progetto, poi http://localhost:8000.
+
 
 ## 6. Pubblicazione
 
@@ -102,11 +123,8 @@ Dopo un aggiornamento, il browser può mostrare la versione vecchia per circa 10
 
 ## 7. Prossimi passi
 
-- **Salvataggio online con Firebase** (database gratuito di Google):
-  - Accesso con account Google. Solo gli account autorizzati possono spuntare; gli altri vedono il sito in sola lettura.
-  - Aggiornamento in tempo reale tra dispositivi.
-  - Al primo accesso, le spunte già salvate nel browser vengono trasferite online.
-  - Da decidere: quali account possono modificare la lista.
+- Possibile: disponibilità automatica sulle piattaforme (Disney+, Netflix, Prime Video…) in Italia, tramite TMDB/JustWatch, in aggiunta al "Salta" manuale.
+- Possibile: backup delle spunte su file (scarica / ricarica).
 - Possibile: pulsante per passare dall'ordine di uscita all'ordine cronologico degli eventi nella storia.
 - Possibile: titoli dei singoli episodi nella finestra episodi (oggi sono solo numerati).
 - Da aggiungere quando escono: Avengers: Secret Wars (17/12/2027), Your Friendly Neighborhood Spider-Man stagione 2 (13/01/2027), Daredevil: Rinascita stagione 3 (2027).
