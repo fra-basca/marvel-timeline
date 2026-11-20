@@ -54,6 +54,7 @@ Legenda stato: ✅ fatto · 🔜 da fare
 | 3.5b | Sotto l'etichetta, su un'unica riga: anno • durata (o numero di episodi), separati da un pallino dello stesso grigio del testo | ✅ |
 | 3.6 | Responsive: su computer circa 8–9 schede per riga, su telefono 3 | ✅ |
 | 3.6a | Nessun effetto al passaggio del mouse sulle schede (niente sollevamento) | ✅ |
+| 3.6b | Icona Marvel (quadrato rosso con scritta bianca) quando il sito viene aggiunto alla schermata Home di iPhone/iPad, con nome "Marvel"; la stessa icona compare nella scheda del browser | ✅ |
 | 3.7 | Nel piè di pagina: "Progetto personale non ufficiale, non affiliato a Marvel o Disney" | ✅ |
 
 ## 4. Filtri

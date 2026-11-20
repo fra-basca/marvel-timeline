@@ -14,7 +14,9 @@ Poi, per ogni parte, nell'ordine:
   2. apri la cartella della parte nel Finder, premi ⌘A e trascina tutto nel browser
   3. clicca "Commit changes"
 """
+import re
 import shutil
+import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -52,6 +54,15 @@ def main():
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(ROOT / rel, target)
         print(f"parte-{n}: {len(part)} file")
+
+    # Numero di versione nei link di index.html (style.css?v=..., app.js?v=...):
+    # cambia a ogni pubblicazione, così il browser riscarica tutti i file insieme
+    # invece di mescolare versioni vecchie (in cache) e nuove.
+    version = time.strftime("%Y%m%d%H%M")
+    for index in OUT.glob("parte-*/index.html"):
+        html = index.read_text(encoding="utf-8")
+        index.write_text(re.sub(r"\?v=[\w-]+", f"?v={version}", html), encoding="utf-8")
+    print(f"versione: {version}")
 
     print(f"\nPronto in: {OUT}")
     print("Carica le parti una alla volta, in ordine, da "
