@@ -11,18 +11,28 @@
   <header class="site-header">
     <h1>Marvel <span>Timeline</span></h1>
     <p class="subtitle">Film e serie del Marvel Cinematic Universe in ordine di uscita</p>
-    <nav class="filters" aria-label="Filtra per tipo">
+    <div class="progress">
+      <div class="progress-bar"><div id="progress-fill" class="progress-fill"></div></div>
+      <span id="progress-text" class="progress-text"></span>
+    </div>
+
+    <nav class="filters" data-group="type" aria-label="Filtra per tipo">
       <button type="button" data-filter="all" class="active">Tutti</button>
       <button type="button" data-filter="film">Film</button>
       <button type="button" data-filter="serie">Serie</button>
       <button type="button" data-filter="speciale">Speciali</button>
+    </nav>
+    <nav class="filters" data-group="status" aria-label="Filtra per visti">
+      <button type="button" data-filter="all" class="active">Tutti</button>
+      <button type="button" data-filter="todo">Da vedere</button>
+      <button type="button" data-filter="seen">Visti</button>
     </nav>
   </header>
 
   <main id="timeline" class="timeline"></main>
 
   <footer class="site-footer">
-    <p>Progetto personale non ufficiale. Locandine da <a href="https://www.themoviedb.org/" target="_blank" rel="noopener">TMDB</a>.</p>
+    <p>Progetto personale non ufficiale. Locandine da <a href="https://en.wikipedia.org/" target="_blank" rel="noopener">Wikipedia</a>. I titoli visti sono salvati solo in questo browser.</p>
   </footer>
 
   <script src="data.js"></script>

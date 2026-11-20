@@ -6,6 +6,7 @@
   --muted: #9a9a9a;
   --accent: #e62429; /* rosso */
   --line: #2a2a2a;
+  --seen: #2fbf71; /* verde "visto" */
 }
 
 * { box-sizing: border-box; }
@@ -21,7 +22,7 @@ body {
 /* ---------- Header ---------- */
 .site-header {
   text-align: center;
-  padding: 40px 16px 24px;
+  padding: 28px 16px 12px;
 }
 .site-header h1 {
   margin: 0;
@@ -33,11 +34,38 @@ body {
 .site-header h1 span { color: var(--accent); }
 .subtitle { margin: 8px 0 24px; color: var(--muted); }
 
+.progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 420px;
+  margin: 0 auto 20px;
+}
+.progress-bar {
+  flex: 1;
+  height: 8px;
+  background: #222;
+  border-radius: 999px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  width: 0;
+  background: var(--seen);
+  transition: width .3s;
+}
+.progress-text {
+  font-size: .9rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
 .filters {
   display: flex;
   justify-content: center;
   flex-wrap: wrap;
   gap: 8px;
+  margin-bottom: 10px;
 }
 .filters button {
   background: transparent;
@@ -52,48 +80,17 @@ body {
 .filters button:hover { border-color: var(--muted); }
 .filters button.active { background: var(--accent); border-color: var(--accent); }
 
-/* ---------- Timeline ---------- */
+/* ---------- Griglia ---------- */
 .timeline {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 0 16px 48px;
-}
-
-.year {
-  position: relative;
-  padding-left: 28px;
-  border-left: 2px solid var(--line);
-  padding-bottom: 32px;
-}
-.year:last-child { border-left-color: transparent; }
-
-.year-label {
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  margin: 0 0 16px;
-  padding: 8px 0;
-  background: var(--bg);
-  font-size: 1.6rem;
-  font-weight: 800;
-}
-.year-label::before {
-  content: "";
-  position: absolute;
-  left: -36px;
-  top: 50%;
-  width: 14px;
-  height: 14px;
-  margin-top: -7px;
-  border-radius: 50%;
-  background: var(--accent);
-  box-shadow: 0 0 0 4px var(--bg);
+  padding: 8px 16px 48px;
 }
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 14px;
 }
 
 /* ---------- Card ---------- */
@@ -123,27 +120,75 @@ body {
   display: block;
 }
 .poster:has(img) { padding: 0; }
+.poster { position: relative; }
 
-.info { padding: 10px 12px 14px; }
+/* Le serie spesso hanno un logo orizzontale: lo mostriamo intero, centrato */
+.poster.logo { background: #0b0b0b; padding: 12px; }
+.poster.logo img { object-fit: contain; }
+
+/* ---------- Checklist "visto" ---------- */
+.seen-mark {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 24px;
+  height: 24px;
+  font-size: .8rem;
+  border-radius: 50%;
+  background: var(--seen);
+  color: #fff;
+  font-weight: 900;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .6);
+}
+.card.seen .seen-mark { display: flex; }
+.card.seen .poster img { opacity: .55; }
+
+.seen-toggle {
+  margin-top: 8px;
+  width: 100%;
+  padding: 5px 6px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: .72rem;
+  cursor: pointer;
+  transition: background .2s, border-color .2s;
+}
+.seen-toggle:hover { border-color: var(--muted); }
+.card.seen .seen-toggle {
+  background: var(--seen);
+  border-color: var(--seen);
+  font-weight: 700;
+}
+
+.empty { text-align: center; color: var(--muted); padding: 40px 0; }
+
+.info { padding: 8px 8px 10px; }
 .info h3 {
-  margin: 0 0 6px;
-  font-size: .95rem;
+  margin: 0 0 4px;
+  font-size: .82rem;
+  line-height: 1.25;
   font-weight: 700;
 }
 .meta {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
-  font-size: .8rem;
+  gap: 4px;
+  font-size: .72rem;
   color: var(--muted);
 }
 .badge {
-  font-size: .7rem;
+  font-size: .62rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: .04em;
-  padding: 2px 6px;
+  padding: 1px 5px;
   border-radius: 4px;
   background: #222;
   color: var(--text);
@@ -163,11 +208,10 @@ body {
 
 /* ---------- Mobile ---------- */
 @media (max-width: 600px) {
-  .year { padding-left: 18px; }
-  .year-label::before { left: -26px; }
   .grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
   }
-  .info h3 { font-size: .85rem; }
+  .info h3 { font-size: .75rem; }
+  .meta { font-size: .66rem; }
 }
