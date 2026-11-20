@@ -4,39 +4,75 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Marvel Timeline</title>
-  <meta name="description" content="La timeline di tutti i film e le serie del Marvel Cinematic Universe, in ordine di uscita.">
+  <meta name="description" content="La timeline di tutti i film e le serie Marvel – MCU, X-Men e Spider-Man Universe – fase per fase.">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <header class="site-header">
-    <h1>Marvel <span>Timeline</span></h1>
-    <p class="subtitle">Film e serie del Marvel Cinematic Universe in ordine di uscita</p>
-    <div class="progress">
-      <div class="progress-bar"><div id="progress-fill" class="progress-fill"></div></div>
-      <span id="progress-text" class="progress-text"></span>
-    </div>
-
-    <nav class="filters" data-group="type" aria-label="Filtra per tipo">
-      <button type="button" data-filter="all" class="active">Tutti</button>
-      <button type="button" data-filter="film">Film</button>
-      <button type="button" data-filter="serie">Serie</button>
-      <button type="button" data-filter="speciale">Speciali</button>
-    </nav>
-    <nav class="filters" data-group="status" aria-label="Filtra per visti">
-      <button type="button" data-filter="all" class="active">Tutti</button>
-      <button type="button" data-filter="todo">Da vedere</button>
-      <button type="button" data-filter="seen">Visti</button>
-    </nav>
+    <h1 class="brand">
+      <img src="assets/marvel-logo.svg" alt="Marvel" width="160" height="64">
+      <span>Timeline</span>
+    </h1>
+    <p class="subtitle">Film e serie Marvel – MCU, X-Men e Spider-Man Universe – fase per fase</p>
   </header>
+
+  <section class="progress" aria-label="Avanzamento generale">
+    <div class="progress-top">
+      <span class="progress-label">Il tuo avanzamento</span>
+      <span class="progress-numbers"><strong id="progress-count"></strong> <span id="progress-total"></span> <span id="progress-pct" class="progress-pct"></span></span>
+    </div>
+    <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" id="progress-bar">
+      <div id="progress-fill" class="progress-fill"></div>
+    </div>
+    <div class="watch-stats">
+      <div class="stat"><span class="stat-label">Tempo guardato</span><span class="stat-value" id="time-watched"></span></div>
+      <div class="stat"><span class="stat-label">Mancano</span><span class="stat-value" id="time-left"></span></div>
+      <div class="stat"><span class="stat-label">Tempo totale</span><span class="stat-value" id="time-total"></span></div>
+    </div>
+  </section>
+
+  <section id="next-up" class="next-up" aria-live="polite"></section>
 
   <main id="timeline" class="timeline"></main>
 
+  <dialog id="episodes-dialog" class="episodes-dialog" aria-labelledby="ed-title">
+    <div class="ed-inner">
+      <div class="ed-header">
+        <div class="ed-poster"></div>
+        <div class="ed-titles">
+          <span class="badge serie ed-badge"></span>
+          <h2 id="ed-title"></h2>
+          <p class="ed-meta"></p>
+        </div>
+        <button type="button" class="ed-close" data-action="close" aria-label="Chiudi">✕</button>
+      </div>
+
+      <div class="ed-progress">
+        <div class="ed-progress-top">
+          <span class="episodes-count"></span>
+          <span class="ed-percent"></span>
+        </div>
+        <div class="ep-bar ed-bar"><span></span></div>
+        <p class="ed-next"></p>
+      </div>
+
+      <div class="episodes-list"></div>
+
+      <div class="episodes-actions">
+        <button type="button" data-action="none" class="ghost">Azzera</button>
+        <button type="button" data-action="all" class="ghost">Segna tutti</button>
+        <button type="button" data-action="close" class="primary">Fatto</button>
+      </div>
+    </div>
+  </dialog>
+
   <footer class="site-footer">
-    <p>Progetto personale non ufficiale. Locandine da <a href="https://en.wikipedia.org/" target="_blank" rel="noopener">Wikipedia</a>. I titoli visti sono salvati solo in questo browser.</p>
+    <p>Progetto personale non ufficiale, non affiliato a Marvel o Disney. Locandine da <a href="https://en.wikipedia.org/" target="_blank" rel="noopener">Wikipedia</a>. I titoli visti sono salvati solo in questo browser.</p>
   </footer>
 
   <script src="data.js"></script>
   <script src="posters.js"></script>
+  <script src="episodes.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
