@@ -40,8 +40,10 @@ async function start() {
 
   function showLoggedIn(user, status) {
     const name = (user.displayName || user.email || "").split(" ")[0];
-    const photo = user.photoURL
-      ? `<img src="${user.photoURL}" alt="" referrerpolicy="no-referrer">`
+    // La foto viene da Google: la usiamo solo se è un indirizzo https, e sempre "ripulita"
+    const photoOk = typeof user.photoURL === "string" && user.photoURL.startsWith("https://");
+    const photo = photoOk
+      ? `<img src="${escapeHtml(user.photoURL)}" alt="" referrerpolicy="no-referrer">`
       : `<span class="auth-initial">${name.charAt(0).toUpperCase()}</span>`;
     authBox.innerHTML = `
       <span class="auth-user">${photo}<span>Ciao ${escapeHtml(name)}</span></span>

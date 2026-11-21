@@ -1,0 +1,27 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Un documento dei progressi è valido solo se contiene i campi usati dal sito,
+    // con il tipo giusto e dimensioni ragionevoli (i titoli sono circa 120).
+    function isValidProgress(d) {
+      return d.keys().hasOnly(['seen', 'skipped', 'episodes', 'updatedAt'])
+        && d.seen is list && d.seen.size() <= 500
+        && (!('skipped' in d) || (d.skipped is list && d.skipped.size() <= 500))
+        && d.episodes is map && d.episodes.size() <= 200
+        && d.updatedAt == request.time;
+    }
+
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    // Ogni utente può leggere, scrivere e cancellare solo il proprio documento
+    match /users/{userId} {
+      allow read, delete: if isOwner(userId);
+      allow create, update: if isOwner(userId) && isValidProgress(request.resource.data);
+    }
+
+    // Tutto il resto del database è chiuso
+  }
+}
