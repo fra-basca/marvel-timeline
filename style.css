@@ -192,6 +192,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
   color: var(--muted);
 }
 .stat-value { font-size: 1.15rem; font-weight: 800; }
+.stat-sub { font-size: .72rem; color: var(--muted); }
 .stat:first-child .stat-value { color: var(--seen); }
 
 /* ---------- Prossimo da guardare ---------- */

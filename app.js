@@ -267,6 +267,15 @@
     return m ? `${h.toLocaleString("it-IT")} h ${m} min` : `${h.toLocaleString("it-IT")} h`;
   }
 
+  // Minuti → giorni di visione continua (24 ore), per esempio "≈ 27,8 giorni"
+  function formatDays(minutes) {
+    if (!minutes) return "0 giorni";
+    const days = minutes / 1440;
+    if (days < 0.1) return "meno di un giorno";
+    const n = days.toLocaleString("it-IT", { maximumFractionDigits: 1 });
+    return `≈ ${n} ${n === "1" ? "giorno" : "giorni"}`;
+  }
+
   function formatDate(iso) {
     return new Date(iso + "T12:00:00").toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric" });
   }
@@ -361,6 +370,9 @@
     document.getElementById("time-watched").textContent = formatTime(watchedTime);
     document.getElementById("time-left").textContent = formatTime(totalTime - watchedTime);
     document.getElementById("time-total").textContent = formatTime(totalTime);
+    document.getElementById("days-watched").textContent = formatDays(watchedTime);
+    document.getElementById("days-left").textContent = formatDays(totalTime - watchedTime);
+    document.getElementById("days-total").textContent = formatDays(totalTime);
   }
 
   // ---------- Prossimo da guardare ----------

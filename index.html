@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Marvel Timeline</title>
   <meta name="description" content="La timeline di tutti i film e le serie Marvel – MCU, X-Men e Spider-Man Universe – fase per fase.">
-  <link rel="stylesheet" href="style.css?v=202611211006">
+  <link rel="stylesheet" href="style.css?v=202611211014">
   <!-- Icona per "Aggiungi a Home" su iPhone/iPad e icona della scheda del browser -->
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
@@ -31,9 +31,9 @@
       <div id="progress-fill" class="progress-fill"></div>
     </div>
     <div class="watch-stats">
-      <div class="stat"><span class="stat-label">Tempo guardato</span><span class="stat-value" id="time-watched"></span></div>
-      <div class="stat"><span class="stat-label">Mancano</span><span class="stat-value" id="time-left"></span></div>
-      <div class="stat"><span class="stat-label">Tempo totale</span><span class="stat-value" id="time-total"></span></div>
+      <div class="stat"><span class="stat-label">Tempo guardato</span><span class="stat-value" id="time-watched"></span><span class="stat-sub" id="days-watched"></span></div>
+      <div class="stat"><span class="stat-label">Mancano</span><span class="stat-value" id="time-left"></span><span class="stat-sub" id="days-left"></span></div>
+      <div class="stat"><span class="stat-label">Tempo totale</span><span class="stat-value" id="time-total"></span><span class="stat-sub" id="days-total"></span></div>
     </div>
   </section>
 
@@ -76,10 +76,10 @@
     <p>Progetto personale non ufficiale, non affiliato a Marvel o Disney. Locandine da <a href="https://en.wikipedia.org/" target="_blank" rel="noopener">Wikipedia</a>. Senza accesso, i titoli visti sono salvati solo in questo browser; con l'accesso Google vengono salvati online.</p>
   </footer>
 
-  <script src="data.js?v=202611211006"></script>
-  <script src="posters.js?v=202611211006"></script>
-  <script src="episodes.js?v=202611211006"></script>
-  <script src="app.js?v=202611211006"></script>
-  <script type="module" src="firebase-sync.js?v=202611211006"></script>
+  <script src="data.js?v=202611211014"></script>
+  <script src="posters.js?v=202611211014"></script>
+  <script src="episodes.js?v=202611211014"></script>
+  <script src="app.js?v=202611211014"></script>
+  <script type="module" src="firebase-sync.js?v=202611211014"></script>
 </body>
 </html>

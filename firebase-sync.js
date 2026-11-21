@@ -94,7 +94,10 @@ async function start() {
       site.useCloud((data) => {
         setDoc(ref, { ...data, updatedAt: serverTimestamp() }).catch((err) => {
           console.error(err);
-          showLoggedIn(user, `<span class="auth-error">Errore di salvataggio</span>`);
+          const hint = err.code === "permission-denied"
+            ? "le regole del database rifiutano i dati: vanno aggiornate"
+            : escapeHtml(err.code || err.message || "errore sconosciuto");
+          showLoggedIn(user, `<span class="auth-error">Errore di salvataggio (${hint})</span>`);
         });
       });
 
