@@ -77,7 +77,7 @@ Legenda stato: ✅ fatto · 🔜 da fare
 | 5.2 | Serie: si spuntano i singoli **episodi**, da una finestra che si apre con il pulsante "Segna episodi" | ✅ |
 | 5.3 | Finestra episodi: intestazione con miniatura della locandina, tag "Stagione N", titolo, anno • numero episodi e ✕ per chiudere | ✅ |
 | 5.3a | Finestra episodi: riquadro di avanzamento con "x di N episodi visti", percentuale, barra e "Prossimo da vedere: episodio N" (o "Stagione completata ✓") | ✅ |
-| 5.3b | Finestra episodi: griglia di episodi grandi e facili da toccare; quelli visti sono verdi con ✓, il prossimo da vedere ha il bordo rosso; le stagioni lunghe scorrono dentro la finestra | ✅ |
+| 5.3b | Finestra episodi: **elenco** degli episodi con numero, **titolo**, durata e data di uscita (da TVmaze); cerchio verde con ✓ per quelli visti, il prossimo da vedere ha il bordo rosso e l'etichetta "PROSSIMO"; le stagioni lunghe scorrono dentro la finestra | ✅ |
 | 5.3c | Finestra episodi: pulsanti "Azzera", "Segna tutti" e "Fatto"; si chiude anche con ✕, cliccando fuori o con il tasto Esc | ✅ |
 | 5.3d | Su telefono la finestra episodi si apre dal basso, a tutta larghezza | ✅ |
 | 5.4 | Una serie risulta vista quando sono stati visti tutti i suoi episodi | ✅ |
@@ -87,8 +87,9 @@ Legenda stato: ✅ fatto · 🔜 da fare
 | 5.8 | Oggi i dati sono salvati **nel browser**: restano dopo la chiusura della pagina, ma valgono solo per quel browser e quel dispositivo | ✅ |
 | 5.8a | **Tempo di visione** sotto la barra generale: tempo guardato, tempo che manca e tempo totale (oggi circa 667 ore: 125 h di film e speciali, 542 h di serie). Per le serie conta la durata reale di ogni episodio visto | ✅ |
 | 5.8b | Riquadro **"Prossimo da guardare"** sotto l'avanzamento: il primo titolo già uscito e non ancora visto, nell'ordine della pagina (Fasi 1–6, poi X-Men Universe, poi Spider-Man Universe). Per le serie indica il prossimo episodio con titolo e durata. Pulsanti: "Segna come visto" (film) oppure "Segna episodio N visto" e "Tutti gli episodi" (serie). Se hai visto tutto, mostra la prossima uscita | ✅ |
-| 5.8c | Nella finestra episodi, passando il mouse su un episodio compaiono titolo e durata | ✅ |
-| 5.9 | Salvataggio **online** con Firebase (vedi sezione 5b) | 🧪 in prova |
+| 5.8c | ~~Titolo e durata dell'episodio al passaggio del mouse~~ — sostituito dall'elenco con i titoli (5.3b) | — |
+| 5.8d | **Data di visione**: quando si segna un film, uno speciale o un episodio come visto viene salvato il giorno. Sulla card: "✓ Visto il 21 nov" (per le serie: data dell'ultimo episodio visto); nella finestra episodi: "visto il 21 nov" accanto a ogni episodio. L'anno compare solo se diverso da quello in corso. I titoli segnati prima di questa funzione restano "✓ Visto" senza data | ✅ |
+| 5.9 | Salvataggio **online** con Firebase (vedi sezione 5b) | ✅ |
 | 5.10 | Pulsante **"Salta"** per i titoli non disponibili sulle vostre piattaforme: icona ⊘ in basso a destra sulla locandina e pulsante "⊘ Salta" nel riquadro "Prossimo da guardare". Per le serie si salta l'intera stagione | ✅ |
 | 5.10a | Le schede saltate restano al loro posto, in grigio, con la scritta "SALTATO" e il pulsante "↺ Ripristina" | ✅ |
 | 5.10b | I titoli saltati non contano nell'avanzamento generale ("12 di 115 titoli visti · 6 saltati"), nel conteggio delle fasi, nel tempo di visione e in "Prossimo da guardare" | ✅ |
@@ -106,10 +107,21 @@ Legenda stato: ✅ fatto · 🔜 da fare
 | 5b.6 | Al primo accesso da un browser, le spunte salvate lì vengono unite a quelle online e poi tolte dal browser | ✅ |
 | 5b.7 | Regole di sicurezza Firestore: ognuno legge e scrive solo il proprio documento (`allow read, write: if request.auth != null && request.auth.uid == userId;` su `/users/{userId}`) | ✅ |
 | 5b.8 | Domini autorizzati in Firebase Authentication: `localhost` (prove) e `fra-basca.github.io` (sito pubblicato) | ✅ |
-| 5b.9 | Prova completa in locale (accesso, salvataggio, sincronizzazione) prima della pubblicazione — in corso: errore "Database non raggiungibile" da risolvere (regole Firestore) | 🔜 |
+| 5b.9 | Prova su più dispositivi: accesso, salvataggio e sincronizzazione funzionanti (21/11/2026) | ✅ |
 
 Per provare in locale serve un piccolo server (l'accesso Google non funziona aprendo il file con doppio clic): `python3 -m http.server 8000` nella cartella del progetto, poi http://localhost:8000.
 
+
+## 5c. Sicurezza
+
+| # | Requisito | Stato |
+|---|---|---|
+| 5c.1 | Nel repository pubblico non ci sono password né dati personali; la configurazione Firebase è pubblica per natura (non dà accesso ai dati) | ✅ |
+| 5c.2 | Regole Firestore severe (`firebase/firestore.rules`): ognuno legge/scrive solo il proprio documento; si possono salvare solo i campi `seen`, `skipped`, `episodes`, `dates`, `updatedAt`, con dimensioni limitate; tutto il resto del database è chiuso. Verificato il 21/11/2026: lettura e scrittura senza login negate | ✅ |
+| 5c.3 | Chiave API limitata ai siti `fra-basca.github.io`, `marvel-timeline-b646e.firebaseapp.com` e `localhost` (console Google Cloud → Credenziali). Verificato il 21/11/2026: da altri siti la chiave viene bloccata | ✅ |
+| 5c.4 | Verifica in due passaggi attiva sull'account Google che gestisce Firebase | 🔜 |
+| 5c.5 | Piano Firebase gratuito (Spark), senza carta di credito: in caso di abuso il servizio si ferma, ma non ci sono costi | ✅ |
+| 5c.6 | La foto profilo di Google viene mostrata solo se è un indirizzo https e dopo essere stata "ripulita" | ✅ |
 
 ## 6. Pubblicazione
 

@@ -82,7 +82,7 @@ async function start() {
     try {
       // Unisce le spunte di questo browser a quelle online (solo la prima volta che ce ne sono)
       const snap = await getDoc(ref);
-      const remote = snap.exists() ? snap.data() : { seen: [], skipped: [], episodes: {} };
+      const remote = snap.exists() ? snap.data() : { seen: [], skipped: [], episodes: {}, dates: {} };
       const local = site.localProgress();
       const hasLocal = local.seen.length || local.skipped.length || Object.keys(local.episodes).length;
       if (!snap.exists() || hasLocal) {
@@ -121,7 +121,12 @@ function merge(a, b) {
       episodes[id] = [...new Set([...(episodes[id] || []), ...list])].sort((x, y) => x - y);
     }
   }
-  return { seen, skipped, episodes };
+  // Date di visione: se un titolo/episodio ha due date, tiene la più vecchia
+  const dates = { ...(b.dates || {}) };
+  for (const [key, d] of Object.entries(a.dates || {})) {
+    if (!dates[key] || d < dates[key]) dates[key] = d;
+  }
+  return { seen, skipped, episodes, dates };
 }
 
 function escapeHtml(s) {

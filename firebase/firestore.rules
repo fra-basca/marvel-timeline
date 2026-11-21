@@ -5,10 +5,11 @@ service cloud.firestore {
     // Un documento dei progressi è valido solo se contiene i campi usati dal sito,
     // con il tipo giusto e dimensioni ragionevoli (i titoli sono circa 120).
     function isValidProgress(d) {
-      return d.keys().hasOnly(['seen', 'skipped', 'episodes', 'updatedAt'])
+      return d.keys().hasOnly(['seen', 'skipped', 'episodes', 'dates', 'updatedAt'])
         && d.seen is list && d.seen.size() <= 500
         && (!('skipped' in d) || (d.skipped is list && d.skipped.size() <= 500))
         && d.episodes is map && d.episodes.size() <= 200
+        && (!('dates' in d) || (d.dates is map && d.dates.size() <= 2000))
         && d.updatedAt == request.time;
     }
 

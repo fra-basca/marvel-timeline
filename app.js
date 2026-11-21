@@ -57,13 +57,22 @@
   // Con l'accesso Google, firebase-sync.js imposta "cloudSaver" e i progressi vanno online.
   let cloudSaver = null;
 
-  // Formato salvato: { seen: [id...], skipped: [id...], episodes: { idSerie: [numeri...] } }
+  // Formato salvato:
+  // { seen: [id...], skipped: [id...], episodes: { idSerie: [numeri...] },
+  //   dates: { "idFilm": "AAAA-MM-GG", "idSerie#3": "AAAA-MM-GG" } }  ← data di visione
   function serialize(progress) {
     const episodes = {};
     Object.entries(progress.episodes).forEach(([id, set]) => {
       if (set.size) episodes[id] = [...set].sort((a, b) => a - b);
     });
-    return { seen: [...progress.seen].sort(), skipped: [...progress.skipped].sort(), episodes };
+    // Tiene solo le date di ciò che risulta ancora visto
+    const dates = {};
+    Object.entries(progress.dates).forEach(([key, date]) => {
+      const [id, n] = key.split("#");
+      const stillSeen = n ? (episodes[id] || []).includes(Number(n)) : progress.seen.has(id);
+      if (stillSeen) dates[key] = date;
+    });
+    return { seen: [...progress.seen].sort(), skipped: [...progress.skipped].sort(), episodes, dates };
   }
 
   function deserialize(raw) {
@@ -73,11 +82,12 @@
       seen: new Set((raw && raw.seen) || []),
       skipped: new Set((raw && raw.skipped) || []),
       episodes,
+      dates: { ...((raw && raw.dates) || {}) },
     };
   }
 
   function loadProgress() {
-    const empty = { seen: new Set(), skipped: new Set(), episodes: {} };
+    const empty = { seen: new Set(), skipped: new Set(), episodes: {}, dates: {} };
     try {
       const raw = JSON.parse(localStorage.getItem(STORAGE_KEY));
       if (raw) return deserialize(raw);
@@ -149,6 +159,57 @@
     if (skipped) state.progress.skipped.add(id); else state.progress.skipped.delete(id);
     saveProgress();
     render();
+  }
+
+  // ---------- Data di visione ----------
+  // Data di oggi (ora locale) nel formato AAAA-MM-GG
+  function today() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  }
+
+  // Segna / toglie un film o speciale come visto, registrando la data
+  function setTitleSeen(id, seen) {
+    if (seen) {
+      state.progress.seen.add(id);
+      if (!state.progress.dates[id]) state.progress.dates[id] = today();
+    } else {
+      state.progress.seen.delete(id);
+      delete state.progress.dates[id];
+    }
+  }
+
+  // Imposta gli episodi visti di una serie: data di oggi a quelli appena aggiunti
+  function setSeriesEpisodes(id, numbers) {
+    const next = new Set(numbers);
+    const dates = state.progress.dates;
+    next.forEach((n) => { if (!dates[`${id}#${n}`]) dates[`${id}#${n}`] = today(); });
+    episodesSeen(id).forEach((n) => { if (!next.has(n)) delete dates[`${id}#${n}`]; });
+    state.progress.episodes[id] = next;
+  }
+
+  // Data in cui un titolo è stato visto (per le serie: quella dell'ultimo episodio visto)
+  function seenDate(item) {
+    if (item.type !== "serie") return state.progress.dates[item.id] || null;
+    let last = null;
+    episodesSeen(item.id).forEach((n) => {
+      const d = state.progress.dates[`${item.id}#${n}`];
+      if (d && (!last || d > last)) last = d;
+    });
+    return last;
+  }
+
+  function episodeSeenDate(id, n) {
+    return state.progress.dates[`${id}#${n}`] || null;
+  }
+
+  // "2026-11-21" → "21 nov" (con l'anno se non è quello in corso: "21 nov 2025")
+  function formatShortDate(iso) {
+    if (!iso) return "";
+    const d = new Date(iso + "T12:00:00");
+    const opts = { day: "numeric", month: "short" };
+    if (d.getFullYear() !== new Date().getFullYear()) opts.year = "numeric";
+    return d.toLocaleDateString("it-IT", opts);
   }
 
   function formatDuration(item) {
@@ -225,12 +286,13 @@
     if (isSkipped(item)) {
       return `<button type="button" class="seen-toggle restore" data-action="restore" data-id="${item.id}">↺ Ripristina</button>`;
     }
+    const when = seen && seenDate(item) ? ` il ${formatShortDate(seenDate(item))}` : "";
     if (item.type === "serie") {
-      const label = seen ? "✓ Vista" : "Segna episodi";
+      const label = seen ? `✓ Vista${when}` : "Segna episodi";
       return `<button type="button" class="seen-toggle" data-action="episodes" data-id="${item.id}">${label}</button>`;
     }
     return `<button type="button" class="seen-toggle" data-action="toggle" data-id="${item.id}" aria-pressed="${seen}">
-      ${seen ? "✓ Visto" : "Segna visto"}</button>`;
+      ${seen ? `✓ Visto${when}` : "Segna visto"}</button>`;
   }
 
   function cardHtml(item) {
@@ -370,14 +432,14 @@
     if (btn.dataset.action === "episodes") openEpisodes(id);
     if (btn.dataset.action === "skip") setSkipped(id, true);
     if (btn.dataset.action === "mark-title") {
-      state.progress.seen.add(id);
+      setTitleSeen(id, true);
       saveProgress();
       render();
     }
     if (btn.dataset.action === "mark-episode") {
       const set = new Set(episodesSeen(id));
       set.add(Number(btn.dataset.episode));
-      state.progress.episodes[id] = set;
+      setSeriesEpisodes(id, set);
       saveProgress();
       render();
     }
@@ -420,21 +482,25 @@
     dialog.querySelector("h2").textContent = cardTitle(item);
     dialog.querySelector(".ed-meta").textContent = `${yearOf(item)} • ${item.episodes} episodi`;
 
-    const seenSet = episodesSeen(item.id);
-    epList.innerHTML = range(item.episodes).map((n) => `
-      <label class="ep-chip" title="${escapeHtml(episodeTooltip(item.id, n))}">
-        <input type="checkbox" value="${n}" ${seenSet.has(n) ? "checked" : ""}>
-        <span class="ep-num">${n}</span>
-        <span class="ep-check" aria-hidden="true">✓</span>
-      </label>`).join("");
+    // Elenco episodi: numero, titolo, durata, data di uscita e (se visto) data di visione
+    epList.innerHTML = range(item.episodes).map((n) => {
+      const info = episodeInfo(item.id, n) || {};
+      const parts = [];
+      if (info.minutes) parts.push(`${info.minutes} min`);
+      if (info.date) parts.push(`uscito il ${formatShortDate(info.date)}`);
+      return `
+        <label class="ep-item">
+          <input type="checkbox" value="${n}">
+          <span class="ep-box" aria-hidden="true">✓</span>
+          <span class="ep-n">${n}</span>
+          <span class="ep-main">
+            <span class="ep-title">${escapeHtml(info.title || `Episodio ${n}`)}</span>
+            <span class="ep-sub">${parts.join(" · ")}<span class="ep-seen-on"></span></span>
+          </span>
+          <span class="ep-next-tag">Prossimo</span>
+        </label>`;
+    }).join("");
     updateDialog();
-  }
-
-  // Testo che compare passando il mouse su un episodio: "Episodio 1 – Glorious Purpose (52 min)"
-  function episodeTooltip(id, n) {
-    const info = episodeInfo(id, n);
-    if (!info) return `Episodio ${n}`;
-    return `Episodio ${n} – ${info.title}${info.minutes ? ` (${info.minutes} min)` : ""}`;
   }
 
   // Aggiorna avanzamento ed evidenziazione senza ricostruire la finestra
@@ -455,8 +521,14 @@
 
     epList.querySelectorAll("input").forEach((input) => {
       const n = Number(input.value);
+      const row = input.parentElement;
       input.checked = seenSet.has(n);
-      input.parentElement.classList.toggle("next", n === next);
+      row.classList.toggle("next", n === next);
+      const when = seenSet.has(n) ? episodeSeenDate(item.id, n) : null;
+      const hasInfo = row.querySelector(".ep-sub").firstChild.nodeType === Node.TEXT_NODE;
+      row.querySelector(".ep-seen-on").textContent = when
+        ? `${hasInfo ? " · " : ""}visto il ${formatShortDate(when)}`
+        : "";
     });
   }
 
@@ -467,7 +539,7 @@
   }
 
   function setEpisodes(id, numbers) {
-    state.progress.episodes[id] = new Set(numbers);
+    setSeriesEpisodes(id, numbers);
     saveProgress();
     updateDialog();
     render();
@@ -509,8 +581,7 @@
       openEpisodes(id);
       return;
     }
-    const seen = state.progress.seen;
-    if (seen.has(id)) seen.delete(id); else seen.add(id);
+    setTitleSeen(id, !state.progress.seen.has(id));
     saveProgress();
     render();
   });
